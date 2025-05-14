@@ -82,7 +82,38 @@ app.post('/api/fingerprint', async (req, res) => {
 
       if (error) {
         console.error(`Error executing fpcalc: ${error.message}`);
-        return res.status(500).json({ error: 'Failed to generate fingerprint' });
+
+        // Run diagnostics to help troubleshoot the issue
+        const diagnostics = {
+          error: 'Failed to generate fingerprint',
+          details: error.message,
+          command: `fpcalc -json "${filePath}"`,
+          errorCode: error.code,
+          errorSignal: error.signal,
+          path: filePath,
+          os: process.platform,
+          nodeVersion: process.version
+        };
+
+        // Try to get fpcalc version information
+        try {
+          const fpcalcVersionOutput = require('child_process').execSync('fpcalc -version').toString();
+          diagnostics.fpcalcVersion = fpcalcVersionOutput.trim();
+        } catch (versionError) {
+          diagnostics.fpcalcVersionError = versionError.message;
+
+          // Check if fpcalc is installed
+          try {
+            const fpcalcPath = require('child_process').execSync('which fpcalc').toString();
+            diagnostics.fpcalcPath = fpcalcPath.trim();
+          } catch (whichError) {
+            diagnostics.fpcalcNotFound = true;
+            diagnostics.error = 'Failed to generate fingerprint: fpcalc not found. Please make sure Chromaprint is installed.';
+          }
+        }
+
+        console.error('Diagnostics:', JSON.stringify(diagnostics, null, 2));
+        return res.status(500).json(diagnostics);
       }
 
       if (stderr) {

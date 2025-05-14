@@ -5,7 +5,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "start:safe": "./start.sh",
+    "docker:build": "docker build -t audio-fingerprint-app .",
+    "docker:run": "docker run -p 3000:8080 audio-fingerprint-app"
   },
   "keywords": [],
   "author": "",
