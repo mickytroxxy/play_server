@@ -7,6 +7,7 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const CryptoJS = require('crypto-js');
 
 // Load environment variables
 dotenv.config();
@@ -124,11 +125,29 @@ app.post('/api/fingerprint', async (req, res) => {
         // Parse the JSON output from fpcalc
         const fingerprintData = JSON.parse(stdout);
 
+        // Hash the fingerprint using CryptoJS
+        const originalFingerprint = fingerprintData.fingerprint;
+
+        // Create different hash formats
+        const sha256Hash = CryptoJS.SHA256(originalFingerprint).toString();
+        const md5Hash = CryptoJS.MD5(originalFingerprint).toString();
+
+        // Create response object with hashed fingerprints
+        const responseData = {
+          ...fingerprintData,
+          originalFingerprint: fingerprintData.fingerprint,
+          fingerprint: sha256Hash, // Replace original with SHA-256 hash
+          hashes: {
+            sha256: sha256Hash,
+            md5: md5Hash
+          }
+        };
+
         // Return the fingerprint data to the client
         return res.json({
           success: true,
-          message: 'Fingerprint generated successfully',
-          data: fingerprintData
+          message: 'Fingerprint generated and hashed successfully',
+          data: responseData
         });
       } catch (parseError) {
         console.error(`Error parsing fpcalc output: ${parseError.message}`);
