@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Fingerprinting Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Audio Fingerprinting Demo</h1>
+    <p>Upload an audio file to generate its acoustic fingerprint using Chromaprint/fpcalc.</p>
+    
+    <div class="form-group">
+        <label for="audioFile">Select Audio File:</label>
+        <input type="file" id="audioFile" accept="audio/*">
+    </div>
+    
+    <button id="uploadBtn">Generate Fingerprint</button>
+    
+    <div id="result" class="hidden"></div>
+    
+    <script>
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('audioFile');
+            const resultDiv = document.getElementById('result');
+            
+            if (!fileInput.files.length) {
+                alert('Please select an audio file');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('audio', file);
+            
+            resultDiv.textContent = 'Processing...';
+            resultDiv.classList.remove('hidden');
+            
+            try {
+                const response = await fetch('/api/fingerprint', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.textContent = `Error: ${data.error || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
