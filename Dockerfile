@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:20
 
 # Install dependencies for Chromaprint and ffmpeg
 RUN apt-get update && apt-get install -y \
