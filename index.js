@@ -35,7 +35,7 @@ const firebaseStorage = getStorage(firebaseApp);
 const app = express();
 
 // Define port
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Global in-memory cache for generated music pending user approval to save
 const pendingSongs = new Map();
