@@ -15,7 +15,7 @@ dotenv.config();
 
 // Initialize Firebase Client SDK
 const { initializeApp } = require('firebase/app');
-const { getFirestore, doc, setDoc } = require('firebase/firestore');
+const { getFirestore, doc, setDoc, getDocs, query, collection } = require('firebase/firestore');
 const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 
 const firebaseConfig = {
@@ -31,6 +31,17 @@ const firebaseApp = initializeApp(firebaseConfig);
 const firestoreDb = getFirestore(firebaseApp);
 const firebaseStorage = getStorage(firebaseApp);
 
+
+const getSecretKeys = async () => {
+  try {
+    const querySnapshot = await getDocs(query(collection(firestoreDb, "secrets")));
+    const data = querySnapshot.docs.map((doc) => doc.data());
+    return data;
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
+};
 // Initialize express app
 const app = express();
 
@@ -221,7 +232,11 @@ app.post('/api/generate-music', async (req, res) => {
     const artistName = req.body.artistName ? req.body.artistName.trim() : '';
     const songTitle = req.body.songTitle ? req.body.songTitle.trim() : '';
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const secrets = await getSecretKeys();
+    const apiKey = secrets?.[0]?.GEMINI_API_KEY;
+    console.log('SECRETS RAW:', JSON.stringify(secrets));
+    console.log('API KEY:', apiKey);
+    console.log('done')
     if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
       return res.status(500).json({
         error: 'GEMINI_API_KEY is not configured on the server. Please verify your environment configuration.'
