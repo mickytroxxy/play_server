@@ -3,97 +3,777 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Fingerprinting Demo</title>
+    <title>Audio Lab: Fingerprinting & Generation</title>
+    <!-- Include Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: #0a0f24;
+            --bg-card: rgba(18, 26, 56, 0.6);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-cyan: #06b6d4;
+            --accent-cyan-glow: rgba(6, 182, 212, 0.3);
+            --accent-purple: #a855f7;
+            --accent-purple-glow: rgba(168, 85, 247, 0.3);
+            --accent-green: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
             max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            width: 100%;
         }
-        h1 {
-            color: #333;
+
+        header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            letter-spacing: -0.02em;
         }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        main {
+            max-width: 950px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        @media (min-width: 768px) {
+            main {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card.fingerprint-card:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .card.generation-card:hover {
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .card h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card.fingerprint-card h2 {
+            color: var(--accent-cyan);
+        }
+
+        .card.generation-card h2 {
+            color: var(--accent-purple);
+        }
+
+        .card-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            line-height: 1.4;
+        }
+
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
+
         label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
         }
-        button {
-            padding: 10px 15px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
+
+        /* Drag and Drop Zone */
+        .upload-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
             cursor: pointer;
-            font-size: 16px;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.02);
+            position: relative;
         }
-        button:hover {
-            background-color: #45a049;
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent-cyan);
+            background: rgba(6, 182, 212, 0.04);
         }
-        #result {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-            white-space: pre-wrap;
-            overflow-x: auto;
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
         }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .upload-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .upload-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .file-selected-name {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        /* TextInput Styles */
+        input[type="text"], textarea {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 10px var(--accent-purple-glow);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 110px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 10px var(--accent-purple-glow);
+        }
+
+        .input-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* Button Styles */
+        button {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .fingerprint-btn {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
+        }
+
+        .fingerprint-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0891b2, #0e7490);
+            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .generation-btn {
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2);
+        }
+
+        .generation-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+            transform: translateY(-1px);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Results / Output Container */
+        .output-container {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+            max-height: 350px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+
+        .output-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-weight: 600;
+        }
+
+        .badge.cyan {
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--accent-cyan);
+        }
+
+        .badge.purple {
+            background: rgba(168, 85, 247, 0.15);
+            color: var(--accent-purple);
+        }
+
+        .output-data {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: #e5e7eb;
+        }
+
+        .output-item {
+            margin-bottom: 12px;
+        }
+
+        .output-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+            display: block;
+        }
+
+        .output-value {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 6px;
+            user-select: all;
+        }
+
+        .fingerprint-scroll {
+            max-height: 120px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+        }
+
+        /* Spinner & Progress */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Audio Player Styling */
+        .audio-player-container {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        audio {
+            width: 100%;
+            height: 40px;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        audio::-webkit-media-controls-panel {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .download-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-purple);
+        }
+
         .hidden {
-            display: none;
+            display: none !important;
+        }
+
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        footer a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <h1>Audio Fingerprinting Demo</h1>
-    <p>Upload an audio file to generate its acoustic fingerprint using Chromaprint/fpcalc.</p>
-    
-    <div class="form-group">
-        <label for="audioFile">Select Audio File:</label>
-        <input type="file" id="audioFile" accept="audio/*">
-    </div>
-    
-    <button id="uploadBtn">Generate Fingerprint</button>
-    
-    <div id="result" class="hidden"></div>
-    
+    <header>
+        <h1>Audio Lab</h1>
+        <p>Advanced acoustics fingerprinting and generative music creation suite</p>
+    </header>
+
+    <main>
+        <!-- Card 1: Acoustic Audio Fingerprinting -->
+        <section class="card fingerprint-card">
+            <h2>
+                <span>🎧</span> Acoustic Fingerprinting
+            </h2>
+            <p class="card-description">
+                Upload any audio file to generate its acoustic fingerprint and compute secure SHA-256 and MD5 hashes of the signature.
+            </p>
+
+            <div class="form-group">
+                <label>Audio File</label>
+                <div class="upload-zone" id="uploadZone">
+                    <span class="upload-icon">📂</span>
+                    <span class="upload-text">Drag and drop file here or click to browse</span>
+                    <span class="upload-hint">Supports MP3, WAV, OGG, FLAC, M4A up to 50MB</span>
+                    <input type="file" id="audioFile" accept="audio/*">
+                </div>
+                <div class="file-selected-name hidden" id="fileSelectedName"></div>
+            </div>
+
+            <button id="fingerprintBtn" class="fingerprint-btn">
+                <span>Generate Fingerprint</span>
+            </button>
+
+            <!-- Results Output -->
+            <div id="fingerprintOutputContainer" class="output-container hidden">
+                <div class="output-title">
+                    <span>Fingerprint Data</span>
+                    <span class="badge cyan">SUCCESS</span>
+                </div>
+                <div class="output-data" id="fingerprintResult">
+                    <!-- Dynamic details will be added here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Card 2: AI Music Generation -->
+        <section class="card generation-card">
+            <h2>
+                <span>✨</span> AI Music Generation
+            </h2>
+            <p class="card-description">
+                Describe a style, mood, or instrument setup to generate a complete custom track via Google's Lyria 3 Pro model.
+            </p>
+
+            <div class="form-group">
+                <label for="prompt">Describe the track (Prompt)</label>
+                <textarea id="prompt" placeholder="A beautiful cinematic piano melody with sweeping strings..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="artistName">Artist Name (Optional)</label>
+                <input type="text" id="artistName" placeholder="e.g. DJ Shadow">
+            </div>
+
+            <div class="form-group">
+                <label for="songTitle">Song Title (Optional)</label>
+                <input type="text" id="songTitle" placeholder="e.g. Shadowland">
+            </div>
+
+            <div class="form-group">
+                <label for="user">User Folder Name</label>
+                <input type="text" id="user" placeholder="e.g. micky_troxxy" value="user_guest">
+                <span class="input-hint">Allowed: alphanumeric characters, dashes, and underscores.</span>
+            </div>
+
+            <button id="generateBtn" class="generation-btn">
+                <span>Generate Music</span>
+            </button>
+
+            <!-- Results Output -->
+            <div id="generationOutputContainer" class="output-container hidden">
+                <div class="output-title">
+                    <span>Generated Track</span>
+                    <span class="badge purple">READY</span>
+                </div>
+                <div class="output-data" id="generationResult">
+                    <!-- Dynamic elements will be inserted here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Powered by Chromaprint and Google Lyria 3 Pro. View documentation at <a href="https://ai.google.dev/gemini-api/docs/music-generation" target="_blank">Google AI Dev</a>.</p>
+    </footer>
+
     <script>
-        document.getElementById('uploadBtn').addEventListener('click', async () => {
-            const fileInput = document.getElementById('audioFile');
-            const resultDiv = document.getElementById('result');
-            
+        // --- 1. Acoustic Fingerprinting Script ---
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('audioFile');
+        const fileSelectedName = document.getElementById('fileSelectedName');
+        const fingerprintBtn = document.getElementById('fingerprintBtn');
+        const fingerprintOutputContainer = document.getElementById('fingerprintOutputContainer');
+        const fingerprintResult = document.getElementById('fingerprintResult');
+
+        // Drag and Drop styles
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                updateFileName();
+            }
+        });
+
+        fileInput.addEventListener('change', updateFileName);
+
+        function updateFileName() {
+            if (fileInput.files.length) {
+                fileSelectedName.textContent = `Selected: ${fileInput.files[0].name}`;
+                fileSelectedName.classList.remove('hidden');
+            } else {
+                fileSelectedName.classList.add('hidden');
+            }
+        }
+
+        fingerprintBtn.addEventListener('click', async () => {
             if (!fileInput.files.length) {
-                alert('Please select an audio file');
+                alert('Please select or drop an audio file first.');
                 return;
             }
-            
+
             const file = fileInput.files[0];
             const formData = new FormData();
             formData.append('audio', file);
-            
-            resultDiv.textContent = 'Processing...';
-            resultDiv.classList.remove('hidden');
-            
+
+            // Set loading state
+            fingerprintBtn.disabled = true;
+            fingerprintBtn.innerHTML = '<div class="spinner"></div><span>Processing Audio...</span>';
+            fingerprintOutputContainer.classList.add('hidden');
+
             try {
                 const response = await fetch('/api/fingerprint', {
                     method: 'POST',
                     body: formData
                 });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    resultDiv.textContent = JSON.stringify(data, null, 2);
+
+                const resData = await response.json();
+
+                if (response.ok && resData.success) {
+                    const data = resData.data;
+                    fingerprintResult.innerHTML = `
+                        <div class="output-item">
+                            <span class="output-label">Duration</span>
+                            <div class="output-value">${data.duration} seconds</div>
+                        </div>
+                        <div class="output-item">
+                            <span class="output-label">SHA-256 Signature Hash</span>
+                            <div class="output-value">${data.hashes.sha256}</div>
+                        </div>
+                        <div class="output-item">
+                            <span class="output-label">MD5 Signature Hash</span>
+                            <div class="output-value">${data.hashes.md5}</div>
+                        </div>
+                        <div class="output-item">
+                            <span class="output-label">Raw Fingerprint (partial)</span>
+                            <div class="output-value fingerprint-scroll">${data.originalFingerprint}</div>
+                        </div>
+                    `;
                 } else {
-                    resultDiv.textContent = `Error: ${data.error || 'Unknown error'}`;
+                    fingerprintResult.innerHTML = `
+                        <div class="output-item">
+                            <span class="output-label" style="color: #ef4444;">Error generating fingerprint</span>
+                            <div class="output-value" style="border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);">${resData.error || 'Server error'}</div>
+                        </div>
+                    `;
                 }
             } catch (error) {
-                resultDiv.textContent = `Error: ${error.message}`;
+                fingerprintResult.innerHTML = `
+                    <div class="output-item">
+                        <span class="output-label" style="color: #ef4444;">Connection Error</span>
+                        <div class="output-value" style="border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);">${error.message}</div>
+                    </div>
+                `;
+            } finally {
+                fingerprintBtn.disabled = false;
+                fingerprintBtn.innerHTML = '<span>Generate Fingerprint</span>';
+                fingerprintOutputContainer.classList.remove('hidden');
             }
         });
+
+        // --- 2. AI Music Generation Script ---
+        const promptInput = document.getElementById('prompt');
+        const artistNameInput = document.getElementById('artistName');
+        const songTitleInput = document.getElementById('songTitle');
+        const userInput = document.getElementById('user');
+        const generateBtn = document.getElementById('generateBtn');
+        const generationOutputContainer = document.getElementById('generationOutputContainer');
+        const generationResult = document.getElementById('generationResult');
+
+        generateBtn.addEventListener('click', async () => {
+            const prompt = promptInput.value.trim();
+            const user = userInput.value.trim();
+            const artistName = artistNameInput.value.trim();
+            const songTitle = songTitleInput.value.trim();
+
+            if (!prompt) {
+                alert('Please enter a description for the track.');
+                return;
+            }
+            if (!user) {
+                alert('Please enter a folder name.');
+                return;
+            }
+            if (!/^[a-zA-Z0-9_-]+$/.test(user)) {
+                alert('User folder name can only contain letters, numbers, dashes, and underscores.');
+                return;
+            }
+
+            // Set loading state
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<div class="spinner"></div><span>Generating Composition (this may take up to a minute)...</span>';
+            generationOutputContainer.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/generate-music', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user, prompt, artistName, songTitle })
+                });
+
+                const resData = await response.json();
+
+                if (response.ok && resData.success) {
+                    const data = resData.data;
+                    const audioUrl = `/${data.relativePath}`;
+                    const sizeKB = (data.sizeBytes / 1024).toFixed(1);
+
+                    generationResult.innerHTML = `
+                        <div class="output-item">
+                            <span class="output-label">Temp Song ID</span>
+                            <div class="output-value">${data.id}</div>
+                        </div>
+                        <div class="output-item">
+                            <span class="output-label">Artist Name</span>
+                            <div class="output-value">${data.artistName}</div>
+                        </div>
+                        <div class="output-item">
+                            <span class="output-label">Song Title</span>
+                            <div class="output-value">${data.songTitle}</div>
+                        </div>
+                        ${data.lyrics ? `
+                        <div class="output-item">
+                            <span class="output-label">Song Lyrics</span>
+                            <div class="output-value fingerprint-scroll" style="white-space: pre-wrap; font-family: 'Inter', sans-serif;">${data.lyrics}</div>
+                        </div>` : ''}
+                        <div class="output-item">
+                            <span class="output-label">Temporary Path</span>
+                            <div class="output-value">${data.relativePath}</div>
+                        </div>
+                        <div class="audio-player-container">
+                            <span class="output-label">Listen to Generated Track</span>
+                            <audio controls src="${audioUrl}"></audio>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <a href="${audioUrl}" download="${data.songTitle}.mp3" class="download-link" style="flex: 1;">
+                                    📥 Download MP3
+                                </a>
+                                <button id="saveSongBtn" class="generation-btn" style="flex: 1; margin: 0; padding: 10px;" onclick="saveSong('${data.id}')">
+                                    💾 Save Song
+                                </button>
+                            </div>
+                            <div id="saveResult" class="output-value hidden" style="margin-top: 10px; border-color: var(--accent-green); background: rgba(16, 185, 129, 0.05); color: #a7f3d0; font-size: 0.85rem;"></div>
+                        </div>
+                    `;
+                } else {
+                    generationResult.innerHTML = `
+                        <div class="output-item">
+                            <span class="output-label" style="color: #ef4444;">Generation Failed</span>
+                            <div class="output-value" style="border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);">${resData.error || 'Server error'}${resData.details ? '<br/><br/><small>' + resData.details + '</small>' : ''}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                generationResult.innerHTML = `
+                    <div class="output-item">
+                        <span class="output-label" style="color: #ef4444;">Connection Error</span>
+                        <div class="output-value" style="border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);">${error.message}</div>
+                    </div>
+                `;
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<span>Generate Music</span>';
+                generationOutputContainer.classList.remove('hidden');
+            }
+        });
+
+        // Global saveSong action
+        window.saveSong = async (id) => {
+            const saveBtn = document.getElementById('saveSongBtn');
+            const saveResult = document.getElementById('saveResult');
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<div class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></div><span>Saving...</span>';
+
+            try {
+                const response = await fetch('/api/save-music', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+
+                const result = await response.json();
+                saveResult.classList.remove('hidden');
+
+                if (response.ok && result.success) {
+                    saveBtn.classList.remove('generation-btn');
+                    saveBtn.style.backgroundColor = 'var(--accent-green)';
+                    saveBtn.innerHTML = '✅ Saved';
+                    saveResult.innerHTML = `<strong>Saved successfully!</strong><br/>File: ${result.data.fileName}<br/>Check server terminal console logs for full print out.`;
+                } else {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '💾 Save Song';
+                    saveResult.innerHTML = `<span style="color: #ef4444;">Error: ${result.error || 'Failed to save song'}</span>`;
+                }
+            } catch (err) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '💾 Save Song';
+                saveResult.innerHTML = `<span style="color: #ef4444;">Connection Error: ${err.message}</span>`;
+                saveResult.classList.remove('hidden');
+            }
+        };
     </script>
 </body>
 </html>

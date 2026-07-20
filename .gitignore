@@ -55,3 +55,7 @@ jspm_packages/
 
 # Mac files
 .DS_Store
+
+# Uploaded and generated files
+uploads/
+
